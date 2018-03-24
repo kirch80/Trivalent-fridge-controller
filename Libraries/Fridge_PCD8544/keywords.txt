@@ -1,0 +1,39 @@
+#######################################
+# Syntax Coloring Map For Fridge_PDC8544
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Fridge_PCD8544	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin		KEYWORD2
+clearDisplay	KEYWORD2
+command		KEYWORD2
+data 		KEYWORD2
+display		KEYWORD2
+drawBitmap	KEYWORD2
+drawLine	KEYWORD2
+drawFastHLine	KEYWORD2
+drawFastVLine	KEYWORD2
+drawPixel	KEYWORD2
+drawRect	KEYWORD2
+drawRoundRect	KEYWORD2
+fillRect	KEYWORD2
+setContrast	KEYWORD2
+setTextColor	KEYWORD2
+setTextSize	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
