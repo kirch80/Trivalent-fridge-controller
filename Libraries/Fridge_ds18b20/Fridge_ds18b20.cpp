@@ -13,7 +13,7 @@ Fridge_ds18b20::Fridge_ds18b20(uint8_t pin)
 // false - when the bus is physically damaged
 //       - when devices not respond
 //       - when not detect any device
-void Fridge_ds18b20::begin(uint8_t *dsConfig, uint16_t *dsTemp, uint8_t *dsCont)
+void Fridge_ds18b20::begin(uint8_t *dsConfig, int16_t *dsTemp, uint8_t *dsCont)
 {
   uint32_t beginConversionTime;
   uint16_t i;
@@ -38,7 +38,7 @@ void Fridge_ds18b20::begin(uint8_t *dsConfig, uint16_t *dsTemp, uint8_t *dsCont)
       write(0xCC);           						// Skip ROM command
       write(0xbe);							// Read scratchpad command
       for (i = 0 ; i < 9 ; i++) scratchpad[i] = read();			// Read scratchpad
-      *dsTemp = word(scratchpad[1], scratchpad[0]) * 0.0625 * 10;	// Conversion to ºC for 12bit resolution
+      *dsTemp = (int)word(scratchpad[1], scratchpad[0]) * 0.0625 * 10;	// Conversion to ºC for 12bit resolution
       if (!reset()) goto FAIL;						// If error, exit
       write(0xCC);                               			// Skip ROM command
       write(0x44);                         				// Request for temperature measurements

@@ -36,7 +36,7 @@ class Fridge_ds18b20
 
   public:
     Fridge_ds18b20(uint8_t pin);
-    void     begin(uint8_t *dsConfig, uint16_t *dsTemp, uint8_t *dsCont);
+    void     begin(uint8_t *dsConfig, int16_t *dsTemp, uint8_t *dsCont);
 };
 
 #endif
