@@ -320,7 +320,7 @@ struct StructMenu {                                                             
 // Bit 7 = Disponible
 //
 const StructMenu Menu PROGMEM = {                                                 // Inicializa struct Menu con textos
-  {"A1.00v"},                                                                     // Inicializa texto version de software 
+  {"A1.01v"},                                                                     // Inicializa texto version de software 
   {"MENU CONFIG."},                                                               // Inicializa texto titulo 
   {"TEMPERATURAS","VENTILADORES","ALARMAS","DISPLAY"},                            // Inicializa textos menu
   { 3, 3 + CONGELADOR, 3, 7, 3},                                                  // Inicializa numero de lineas por menu/submenu -1
