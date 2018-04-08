@@ -2,6 +2,10 @@
 
 Controlador de neveras trivalentes con Arduino nano y lcd Nokia 5110 de bajo coste.
 
+![docs/Kit1.jpg](docs/Kit1.jpg)
+![docs/Kit2.jpg](docs/Kit2.jpg)
+![docs/Kit3.jpg](docs/Kit3.jpg)
+
 ## Caracteristicas
 
 - 4 modos de funcionamiento: OFF, GAS(solo gas), ECO(gas y electrico) y NORMAL (solo electrico).
