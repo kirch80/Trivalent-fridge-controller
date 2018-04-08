@@ -176,44 +176,15 @@ const StructBitmapOffOn FIRE PROGMEM = {                                        
   }    
 };
 
-const StructBitmapOffOn FIROW PROGMEM = {                                          // Inicializa struct FIRE para animacion
+const StructBitmapOffOn ECO PROGMEM = {                                           // Inicializa struct ECO para animacion
   {                                                                     
     {
-     0x00,0x00
-,0x01,0x80
-,0x01,0xc0
-,0x03,0xc0
-,0x03,0xec
-,0x07,0xc0
-,0x1f,0x82
-,0x3f,0x04
-,0x3e,0xfa
-,0x7d,0x84
-,0x79,0x42
-,0x71,0x20
-,0x61,0x1c
-,0x11,0x18
-,0x12,0x94
-,0x05,0x40
+     0x01, 0x80, 0x01, 0xc0, 0x03, 0xc0, 0x03, 0xe8, 0x07, 0xfc, 0x1f, 0xfc, 0x3f, 0x7e, 0x3f, 0x3e,
+     0x7f, 0x1e, 0x7c, 0x00, 0x78, 0x60, 0x78, 0xf0, 0x30, 0x7e, 0x10, 0xf0, 0x00, 0x60, 0x00, 0x00
     },
     {
-     0x00,0x00
-,0x01,0x80
-,0x03,0x80
-,0x03,0xc6
-,0x17,0xc0
-,0x3f,0xc0
-,0x3f,0xb2
-,0x7e,0x04
-,0x7c,0xfa
-,0x79,0x84
-,0x79,0x72
-,0x75,0x60
-,0x25,0x50
-,0x01,0x0e
-,0x22,0x8c
-,0x25,0x48
-
+     0x00, 0x00, 0x03, 0x00, 0x07, 0x00, 0x07, 0x80, 0x2f, 0x80, 0x7f, 0xc0, 0x7f, 0xf0, 0xfd, 0xf8,
+     0xf9, 0xf8, 0xf0, 0x00, 0xf0, 0x60, 0xf0, 0xf0, 0x70, 0x7e, 0x70, 0xf0, 0x30, 0x60, 0x00, 0x00
     }
   }    
 };
@@ -380,7 +351,7 @@ struct StructMenu {                                                             
 // Bit 7 = Disponible
 //
 const StructMenu Menu PROGMEM = {                                                 // Inicializa struct Menu con textos
-  {"A1.01v"},                                                                     // Inicializa texto version de software 
+  {"A1.02v"},                                                                     // Inicializa texto version de software 
   {"MENU CONFIG."},                                                               // Inicializa texto titulo 
   {"TEMPERATURAS","VENTILADORES","ALARMAS","DISPLAY"},                            // Inicializa textos menu
   { 3, 3 + CONGELADOR, (NOFROST * 3), 2 + PUERTA + (AMPSENSOR * 4), 3},           // Inicializa numero de lineas por menu/submenu -1
@@ -684,9 +655,8 @@ void ScreenMainConfig(int LongScreen, int ShortScreen) {                        
     memcpy_P (&AuxSens, &Menu.Param[0][AuxMenu], sizeof AuxSens);                 // Copia desde memoria FLASH sensor seleccionado  
     AuxMap = dsTemp[dsTempAux];                                                   // Variable auxiliar para termometro
     CheckMinMax(&AuxMap, AuxSens.MinValue, AuxSens.MaxValue);                     // Compruebo limites para visualizar temperatura en termometro
-    lcd.fillRect(75, 25, 4, map(AuxMap, AuxSens.MinValue, AuxSens.MaxValue, 0, -22), BLACK);// Relleno termometro dependiendo valores            
-    
-  } else {
+    lcd.fillRect(75, 25, 4, map(AuxMap, AuxSens.MinValue, AuxSens.MaxValue, 0, -22), BLACK);// Relleno termometro dependiendo valores                
+  } else {                                                                        // Si tengo alarmas o puerta abierta
     if ((AlarmActiveFlag || DoorAlarmFlag) && Puls_05s) lcd.drawBitmap(71, 0, SPEAKER, 12, 12, BLACK);// Si tengo alarmas, dibuja bitmap altavoz
     if (!AlarmActiveFlag){                                                        // Si no tengo alarmas
       if (DoorOpen) {                                                             // Si puerta abierta
@@ -698,11 +668,7 @@ void ScreenMainConfig(int LongScreen, int ShortScreen) {                        
     }
   }
                                               
-//  if (((Mem.Data.Mode >= 0) && (Mem.Data.Mode <= 2)) && (MenuIndex == 0) && Puls_1s){ // Si tengo modo OFF, GAS o ECO y pulso 1s solo en pantalla principal
-//    DrawString (C, &Text.TextItems[12 + Mem.Data.Mode], 1, 0, 12, 1, true);       // Pinta texto OFF, GAS o ECO invertido
-//  } else {
-    DrawString (C, &Menu.Param[0][AuxMenu].Text, 1, 0, 12, 1, false);             // Pinta texto sensor seleccionado
-//  }  
+  DrawString (C, &Menu.Param[0][AuxMenu].Text, 1, 0, 12, 1, false);               // Pinta texto sensor seleccionado
   
   if (!dsConfig[dsTempAux]) {                                                     // Si no tengo error de lectura sensor de temperatura
     DrawString (C, &Text.TextItems[4], 2, 0, 12, 14, Puls_1s);                    // Escribe texto "Error!" 
@@ -731,12 +697,11 @@ void ScreenMainConfig(int LongScreen, int ShortScreen) {                        
       DrawInt (C, VoltsBat, &Units.UnitsItems[1], 1, 1, 40, true, (VoltsBatAlarmFlag && Puls_05s)); // Dibuja voltaje bateria 
     }
     if (Mem.Data.Mode == 0) {                                                     // Si modo OFF
-//      lcd.fillRoundRect(49, 32, 19, 16, 5, BLACK);                                // Pinta etiqueta rectangular
       lcd.fillRoundRect(31, 32, 51, 16, 5, BLACK);                                // Pinta etiqueta rectangular
       DrawString (C, &Text.TextItems[20], 1, 46, 58, 36, true);                   // Escribe texto "OFF"  
-    } else {
+    } else {                                                                      // Si no estoy en OFF
       if (Mem.Data.Mode == 1) lcd.drawBitmap( 51, 32,  FIRE.BitmapOffOn[Puls_05s].bitmap32, 16, 16, BLACK);// Pinta llama de gas 
-      if (Mem.Data.Mode == 2) lcd.drawBitmap( 51, 32,  FIROW.BitmapOffOn[(digitalRead(RES_OUT) && Puls_05s)].bitmap32, 16, 16, BLACK);// Pinta copo de nieve 
+      if (Mem.Data.Mode == 2) lcd.drawBitmap( 51, 32,  ECO.BitmapOffOn[(digitalRead(RES_OUT) && Puls_05s)].bitmap32, 16, 16, BLACK);// Pinta copo de nieve 
       if (Mem.Data.Mode == 3) lcd.drawBitmap( 51, 32,  SNOW.BitmapOffOn[(digitalRead(RES_OUT) && Puls_05s)].bitmap32, 16, 16, BLACK);// Pinta copo de nieve 
       #if NOFROST                                                                 // Si no tengo ventilador nevera instalado
         lcd.drawBitmap( 33, 32,  FAN.BitmapOffOn[(FanNevAux > 0 && Puls_05s)].bitmap32, 16, 16, BLACK); // Pinta ventilador nevera
