@@ -57,8 +57,8 @@ void Blink() {                                                                  
 
   if (millis() - BlinkLastMillis >= 100) {
     BlinkLastMillis = millis();
-    if (Contraste > 100) SumaResta = 1;
-    if (Contraste <   0) SumaResta = 0;
+    if (Contraste >= 100) SumaResta = 1;
+    if (Contraste <=   0) SumaResta = 0;
     if (!SumaResta){
       Contraste = Contraste +1;    
     } else {

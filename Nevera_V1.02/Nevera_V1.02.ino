@@ -62,10 +62,10 @@
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Definicion de opciones instaladas y compiladas
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define CONGELADOR    false                                                       // Controlador con sensor congelador instalado
-#define AMPSENSOR     false                                                       // Controlador con sensor de corriente instalado
-#define PUERTA        false                                                       // Controlador con sensor puerta instalado
-#define NOFROST       true                                                       // Controlador con ventilador no frost instalado
+#define CONGELADOR    true                                                        // Controlador con sensor congelador instalado
+#define AMPSENSOR     true                                                        // Controlador con sensor de corriente instalado
+#define PUERTA        true                                                        // Controlador con sensor puerta instalado
+#define NOFROST       true                                                        // Controlador con ventilador no frost instalado
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Definicion de variables especiales de librerias sensores temperatura y display
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
