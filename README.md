@@ -28,7 +28,8 @@ https://www.youtube.com/watch?v=7i3DB6VGs78&t=31s
 
 ## Requisitos necesarios
 
-* [Optiboot](https://github.com/Optiboot/optiboot) - Necesario para ampliar memoria disponible Arduino nano
+* [Optiboot](https://github.com/Optiboot/optiboot) - Necesario para ampliar memoria disponible Arduino nano.
+ ACTUALIZADO! Con la nueva version del IDE 1.8.7 ya no es necesario Optiboot, ya que esta integrado en el IDE.
 * [Carcasa 3D](https://www.thingiverse.com/thing:2838724) - Diseño carcasa 3D
 
 ## Diseñado y contruido con
