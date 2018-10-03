@@ -259,15 +259,16 @@ int           FanAmbAux;                                                        
 
 byte          OutputState;                                                        // Variable con estado salidas
 
-int           dsTemp[] = {999,999,999,999};                                       // Array valor temperatura medida en  ºC
+int           dsTemp[] = {0,0,0,0};                                               // Array valor temperatura medida en  ºC
 static byte   dsCont[] = {0,0,0,0};                                               // Array contadores de fallos consecutivos
 bool          dsConfig[] = {0,0,0,0};                                             // Array indicador sensores configurados
 
 volatile int  *EncValue = &AuxMenu;                                               // Inicializa puntero EncValue con AuxMenu
+int           DummyEncoder;                                                       // Variable dummy para encoder
 int           MaxEncValue;                                                        // Valor maximo para EncValue
 int           MinEncValue;                                                        // Valor minimo para EncValue
-bool          Enc1;                                                               // Variable encoder canar A
-bool          Enc2;                                                               // Variable encoder canar B
+bool          Enc1;                                                               // Variable encoder canal A
+bool          Enc2;                                                               // Variable encoder canal B
 bool          Units10;                                                            // Variable suma 10 unidades
   
 bool          Puls_01s;                                                           // Pulso de 0.1s On y 0.1s Off
@@ -351,7 +352,7 @@ struct StructMenu {                                                             
 // Bit 7 = Disponible
 //
 const StructMenu Menu PROGMEM = {                                                 // Inicializa struct Menu con textos
-  {"A1.02v"},                                                                     // Inicializa texto version de software 
+  {"A1.03v"},                                                                     // Inicializa texto version de software 
   {"MENU CONFIG."},                                                               // Inicializa texto titulo 
   {"TEMPERATURAS","VENTILADORES","ALARMAS","DISPLAY"},                            // Inicializa textos menu
   { 3, 3 + CONGELADOR, (NOFROST * 3), 2 + PUERTA + (AMPSENSOR * 4), 3},           // Inicializa numero de lineas por menu/submenu -1
@@ -375,7 +376,7 @@ const StructMenu Menu PROGMEM = {                                               
     },
     {                                                                             // Inicializa submenu "ALARMAS"
       #if PUERTA
-      {"PUERTA"      ,  6,   99,    0, B00010111, &Mem.Data.TimeDoorOpen},        // Alarma tiempo puerta abierta
+      {"PUERTA"      ,  6,  999,    0, B00010111, &Mem.Data.TimeDoorOpen},        // Alarma tiempo puerta abierta
       #endif
       {"GAS BAJO"    ,  3, 1150,  600, B00011111, &Mem.Data.TempSp[4]},           // Alarma gas bajo por poca temperatura hervidor
       {"VOLTS BAT+"  ,  1,  150,   90, B00011111, &Mem.Data.VoltAlarmHighDC},     // Alarma bateria +
@@ -598,6 +599,7 @@ bool ScreenControl(int LongScreen, int ShortScreen, int MaxMenuIndex, bool RstAu
       MenuIndex = MaxMenuIndex;                                                   // MenuIndex = MaxMenuIndex
       EditingFlag = !EditingFlag;                                                 // Cambia estado de bit Editing
       if (!EditingFlag) {                                                         // Si hay edicion
+        EncValue = &DummyEncoder;                                                 // Cargo en encoder variable dummy
         for (int i = 0 ; i < sizeof(StructMem) ; i++) EEPROM.put(i, Mem.b[i]);    // Actualiza valores en EEPROM si hay valores diferentes
         LastScreenNum = ScreenNum;                                                // Memoriza pantalla actual
         PopUpType = 1;                                                            // Configura pantalla parametros guardados
@@ -674,9 +676,9 @@ void ScreenMainConfig(int LongScreen, int ShortScreen) {                        
     DrawString (C, &Text.TextItems[4], 2, 0, 12, 14, Puls_1s);                    // Escribe texto "Error!" 
   } else {                                                                        // Si tengo error de lectura sensor de temperatura
     if (dsTemp[dsTempAux] <= 999) {                                               // Comprueba si temperatura es menor de 4 digitos
-      DrawInt (C, dsTemp[dsTempAux], &Units.UnitsItems[0], 3, 0, 10, true, false);// Escribe temperatura con un decimal
+      DrawInt (C, dsTemp[dsTempAux], &Units.UnitsItems[0], 3, 0, 9, true, false);// Escribe temperatura con un decimal
     } else {
-      DrawInt (C, (dsTemp[dsTempAux] / 10), &Units.UnitsItems[0], 3, 0, 10, false, false); // Escribe temperatura sin decimales      
+      DrawInt (C, (dsTemp[dsTempAux] / 10), &Units.UnitsItems[0], 3, 0, 9, false, false); // Escribe temperatura sin decimales      
     }
   }
   CheckMinMaxToEnc(&AuxMenu, 0, 2 + CONGELADOR);                                  // Cargo y configuro limites encoder
@@ -697,7 +699,7 @@ void ScreenMainConfig(int LongScreen, int ShortScreen) {                        
       DrawInt (C, VoltsBat, &Units.UnitsItems[1], 1, 1, 40, true, (VoltsBatAlarmFlag && Puls_05s)); // Dibuja voltaje bateria 
     }
     if (Mem.Data.Mode == 0) {                                                     // Si modo OFF
-      lcd.fillRoundRect(31, 32, 51, 16, 5, BLACK);                                // Pinta etiqueta rectangular
+      lcd.fillRoundRect(32, 32, 50, 16, 5, BLACK);                                // Pinta etiqueta rectangular
       DrawString (C, &Text.TextItems[20], 1, 46, 58, 36, true);                   // Escribe texto "OFF"  
     } else {                                                                      // Si no estoy en OFF
       if (Mem.Data.Mode == 1) lcd.drawBitmap( 51, 32,  FIRE.BitmapOffOn[Puls_05s].bitmap32, 16, 16, BLACK);// Pinta llama de gas 
@@ -728,7 +730,7 @@ void ScreenMnuConfig(int LongScreen, int ShortScreen) {                         
   struct      StructParam AuxSens;                                                // Struct auxiliar para lectura rapida
   int         DrawOffset;                                                         // Offset cursor dependiendo campos a dibujar
   int         i;                                                                  // Variable contador generico
-  static int  AuxEnable;                                                          // Variable auxiliar 2 para opcion enable
+  int         AuxEnable;                                                          // Variable auxiliar 2 para opcion enable
 
   if (ScreenControl(LongScreen, ShortScreen, 2, true)) return;                    // Subrutina control movimientos en pantalla
   
@@ -786,6 +788,7 @@ void ScreenMnuConfig(int LongScreen, int ShortScreen) {                         
         CheckMinMaxToEnc(&AuxMenu, 0, 1);                                         // Cargo y configuro limites encoder
         if (AuxMenu == 0) lcd.drawFastHLine(18, 19, 52, BLACK);                   // Si no tengo edicion y AuxMenu = 0, escribe linea bajo checklist 
         if (AuxMenu == 1) lcd.drawFastHLine(23, 36, 54, BLACK);                   // Si no tengo edicion y AuxMenu = 1, escribe linea bajo parametro                                           //
+        AuxEnable = bitRead(Mem.Data.EnableAlarms, AuxMenuIndex[1]);              // Lee estado de alarma habilitada/deshabilitada
       }  
       if (EditingFlag && AuxMenu == 0) {                                          // Si tengo edicion de checklist
         CheckMinMaxToEnc(&AuxEnable, 0, 1);                                       // Cargo y configuro limites encoder
@@ -822,7 +825,7 @@ void CheckMinMaxToEnc(int AuxInt, int Min, int Max) {                           
   EncValue = AuxInt;                                                              // Paso valor a encoder
   MinEncValue = Min;                                                              // Valor minimo encoder
   MaxEncValue = Max;                                                              // Valor maximo encoder
-  CheckMinMaxEnc();                                                                // Compuebo limites valor encoder
+  CheckMinMaxEnc();                                                               // Compuebo limites valor encoder
 }
 
 void CheckMinMaxEnc() {                                                           // Subrutina control maximos y minimos encoder
@@ -942,7 +945,7 @@ void FactoryReset() {                                                           
     Mem.Data.TempSp[1] = -120;                                                    // Valor de fabrica consigna congelador 
     Mem.Data.TempSp[2] =  380;                                                    // Valor de fabrica consigna ambiente 
     Mem.Data.TempSp[3] = 1020;                                                    // Valor de fabrica consigna hervidor
-    Mem.Data.TempSp[4] =  850;                                                    // valor de fabrica consigna standby hervidor
+    Mem.Data.TempSp[4] =  900;                                                    // valor de fabrica consigna standby hervidor
 
     Mem.Data.RpmVentAmb = 100;                                                    // Valor de fabrica rpm ventilador ambiente   
     Mem.Data.RpmVentNev = 50;                                                     // Valor de fabrica rpm ventilador nevera
@@ -950,16 +953,16 @@ void FactoryReset() {                                                           
     Mem.Data.RpmVentNevOff = 5;                                                   // Valor de fabrica minutos Off ventilador nevera  
 
     Mem.Data.EnableAlarms = 0;                                                    // Variable alarmas habilitadas/deshabilitadas
-    Mem.Data.TimeDoorOpen = 30;                                                   // Variable alarma tiempo puerta abierta
+    Mem.Data.TimeDoorOpen = 99;                                                   // Variable alarma tiempo puerta abierta
     Mem.Data.VoltAlarmHighDC = 145;                                               // Variable alarma voltaje alto
     Mem.Data.VoltAlarmLowDC = 105;                                                // Variable alarma voltaje bajo
-    Mem.Data.AmpsAlarmHighDC = 100;                                               // Variable alarma consumo alto DC
-    Mem.Data.AmpsAlarmLowDC = 40;                                                 // Variable alarma consumo bajo DC
-    Mem.Data.AmpsAlarmHighAC = 10;                                                // Variable alarma consumo alto AC
+    Mem.Data.AmpsAlarmHighDC = 120;                                               // Variable alarma consumo alto DC
+    Mem.Data.AmpsAlarmLowDC = 50;                                                 // Variable alarma consumo bajo DC
+    Mem.Data.AmpsAlarmHighAC = 15;                                                // Variable alarma consumo alto AC
     Mem.Data.AmpsAlarmLowAC = 02;                                                 // Variable alarma consumo bajo AC
         
-    Mem.Data.Brillo = 50;                                                         // Valor de fabrica brillo
-    Mem.Data.Contrast = 65;                                                       // Valor de fabrica contraste
+    Mem.Data.Brillo = 40;                                                         // Valor de fabrica brillo
+    Mem.Data.Contrast = 75;                                                       // Valor de fabrica contraste
     Mem.Data.BackLightTime = 15;                                                  // Valor de fabrica retroiluminacion
     Mem.Data.BackMenuTime = 10;                                                   // Valor de fabrica retroceso pantalla inactiva
     
@@ -1114,7 +1117,7 @@ void Alarmas() {                                                                
   }
   if (VoltsBatInitFlag) {                                                         // Si lecturas voltage iniciadas Ok
     if (bitRead(Mem.Data.EnableAlarms, 2))  VoltsBatAlarmFlag = (VoltsBat > Mem.Data.VoltAlarmHighDC); // Alarma Batt+
-    if (bitRead(Mem.Data.EnableAlarms, 3))  VoltsBatAlarmFlag = (VoltsBat < Mem.Data.VoltAlarmLowDC);  // Alarma Batt-
+    if (bitRead(Mem.Data.EnableAlarms, 3))  VoltsBatAlarmFlag = (VoltsBat < Mem.Data.VoltAlarmLowDC) && (VoltsBat > 55);  // Alarma Batt-
   }
  
   if (ResetAlarms){                                                               // Reset alarmas
@@ -1137,72 +1140,70 @@ void Alarmas() {                                                                
 void Salidas() {                                                                  // Subrutina control salidas
   static int  CouterMin;                                                          // Variable contador minutos
   int         i;                                                                  // Variable contador generico
+// Significado bits OutputState:
+// Bit 0 = Nevera
+// Bit 1 = Congenlador
+// Bit 2 = Ambiente
+// Bit 3 = Hervidor
+// Bit 4 = StandBy
+// Bit 5 = Vent. nevera
+//
 
-  if (Mem.Data.Mode > 0) {                                                        // Si tengo ciclo activo
-    if (int (dsTemp[0]) >= (Mem.Data.TempSp[0] + 1)) bitSet(OutputState, 0);      // Calcula valor activacion salida nevera
-    if (int (dsTemp[0]) <= (Mem.Data.TempSp[0] - 1)) bitClear(OutputState, 0);    // Calcula valor desactivacion salida nevera
-    #if CONGELADOR                                                                // Si tengo sensor de congelador
-      if (int (dsTemp[1]) >= (Mem.Data.TempSp[1] + 1)) bitSet(OutputState, 1);    // Calcula valor activacion salida congelador
-      if (int (dsTemp[1]) <= (Mem.Data.TempSp[1] - 1)) bitClear(OutputState, 1);  // Calcula valor desactivacion salida congelador
-    #endif
-    if (int (dsTemp[2]) >= (Mem.Data.TempSp[2] + 1)) bitSet(OutputState, 2);      // Calcula valor activacion salida ambiente
-    if (int (dsTemp[2]) <= (Mem.Data.TempSp[2] - 1)) bitClear(OutputState, 2);    // Calcula valor desactivacion salida ambiente    
-    if (int (dsTemp[3]) <= (Mem.Data.TempSp[3] - 1)) bitSet(OutputState, 3);      // Calcula valor activacion salida hervidor
-    if (int (dsTemp[3]) >= (Mem.Data.TempSp[3] + 1)) bitClear(OutputState, 3);    // Calcula valor desactivacion salida hervidor
-    if (int (dsTemp[3]) <= (Mem.Data.TempSp[4] - 1)) bitSet(OutputState, 4);      // Calcula valor desactivacion salida standby hervidor
-    if (int (dsTemp[3]) >= (Mem.Data.TempSp[4] + 1)) bitClear(OutputState, 4);    // Calcula valor desactivacion salida standby hervidor                      
- 
-    if (bitRead(OutputState, 2) && dsConfig[2]){                                  // Si tengo activada salida ventilador ambiente y sensor ambiente configurado
-      FanAmbAux = Mem.Data.RpmVentAmb;                                            // Velocidad programada ventilador ambiente
+  if (Mem.Data.Mode > 0) {                                                        // Si tengo ciclo activo minimo gas
+    if (Puls_1m_FlUp) CouterMin++;                                                // Si tengo pulso 1m, incrementa contador de minutos
+    if (!bitRead(OutputState, 5)) {                                               // Si salida no esta activa
+      if (CouterMin >= Mem.Data.RpmVentNevOff) {                                  // Si tiempo off transcurrido                                     
+        bitWrite(OutputState, 5, true);                                           // Activa salida
+        CouterMin = 0;                                                            // Inicializa contador de minutos
+      } 
     } else {
-      FanAmbAux = 0;                                                              // Velocidad 0 ventilador ambiente 
+      if (CouterMin >= Mem.Data.RpmVentNevOn) {                                   // Si tiempo on transcurrido   
+        bitWrite(OutputState, 5, false);                                          // Desactiva salida
+        CouterMin = 0;                                                            // Inicializa contador de minutos
+      } 
+    }       
+    if (int (dsTemp[2]) >= (Mem.Data.TempSp[2] + 5)) bitSet(OutputState, 2);      // Calcula valor activacion salida ambiente
+    if (int (dsTemp[2]) <= (Mem.Data.TempSp[2] - 5)) bitClear(OutputState, 2);    // Calcula valor desactivacion salida ambiente    
+    if (Mem.Data.Mode > 1) {                                                      // Si tengo ciclo activo minimo eco
+      if (int (dsTemp[3]) <= (Mem.Data.TempSp[4] - 1)) bitSet(OutputState, 4);    // Calcula valor activacion salida standby hervidor
+      if (int (dsTemp[3]) >= (Mem.Data.TempSp[4] + 1)) bitClear(OutputState, 4);  // Calcula valor desactivacion salida standby hervidor                      
+      if (int (dsTemp[3]) <= (Mem.Data.TempSp[3] - 1)) bitSet(OutputState, 3);    // Calcula valor activacion salida hervidor
+      if (int (dsTemp[3]) >= (Mem.Data.TempSp[3] + 1)) bitClear(OutputState, 3);  // Calcula valor desactivacion salida hervidor   
+      if (Mem.Data.Mode > 2) {                                                    // Si tengo ciclo activo normal
+        if (int (dsTemp[0]) >= (Mem.Data.TempSp[0] + 1)) bitSet(OutputState, 0);  // Calcula valor activacion salida nevera
+        if (int (dsTemp[0]) <= (Mem.Data.TempSp[0] - 1)) bitClear(OutputState, 0);// Calcula valor desactivacion salida nevera
+        #if CONGELADOR                                                            // Si tengo sensor de congelador
+          if (int (dsTemp[1]) >= (Mem.Data.TempSp[1] + 1)) bitSet(OutputState, 1);// Calcula valor activacion salida congelador
+          if (int (dsTemp[1]) <= (Mem.Data.TempSp[1] - 1)) bitClear(OutputState, 1);// Calcula valor desactivacion salida congelador
+        #endif
+      } else {
+        bitClear(OutputState, 0);                                                 // Desactivacion salida nevera   
+        bitClear(OutputState, 1);                                                 // Desactivacion salida congelador   
+      }  
+    } else {
+      bitClear(OutputState, 3);                                                   // Desactivacion salida hervidor   
+      bitClear(OutputState, 4);                                                   // Desactivacion salida standby    
     }
-
-    #if NOFROST
-      if (Puls_1m_FlUp) {                                                         // Si tengo pulso 1m
-        CouterMin++;                                                              // Incrementa contador de minutos
-        if (!bitRead(OutputState, 5)) {                                           // Si salida no esta activa
-          if (CouterMin >= Mem.Data.RpmVentNevOff) {                              // Si tiempo off transcurrido                                     
-            bitWrite(OutputState, 5, true);                                       // Activa salida
-            CouterMin = 0;                                                        // Inicializa contador de minutos
-            FanNevAux = Mem.Data.RpmVentNev;                                      // Velocidad max ventilador nevera    
-          } 
-        } else {
-          if (CouterMin >= Mem.Data.RpmVentNevOn) {                               // Si tiempo on transcurrido   
-            bitWrite(OutputState, 5, false);                                      // Desactiva salida
-            CouterMin = 0;                                                        // Inicializa contador de minutos
-            FanNevAux = 0;                                                        // Velocidad 0 ventilador nevera    
-          }
-        }       
-      }     
-    #else
-      FanNevAux = 0;                                                              // Velocidad 0 ventilador nevera    
-    #endif
+  } else {
+    OutputState = 0;                                                              // Desactivo flags salidas    
+  }
     
-    if(Mem.Data.Mode == 1){                                                       // Modo GAS
-      bitClear(OutputState, 0);                                                   // Desactiva salida nevera
-      bitClear(OutputState, 1);                                                   // Desactiva salida congelador
-      bitClear(OutputState, 3);                                                   // Desactiva salida hervidor
-      bitClear(OutputState, 4);                                                   // Desactiva salida standby
-    }
-        
-    if(Mem.Data.Mode == 2){                                                       // Modo ECO
-      bitClear(OutputState, 4);                                                   // Desactiva salida standby
-    }
+  if (bitRead(OutputState, 2) && dsConfig[2]){                                    // Si tengo activada salida ventilador ambiente y sensor ambiente configurado
+    FanAmbAux = Mem.Data.RpmVentAmb;                                              // Velocidad programada ventilador ambiente
+  } else {
+    FanAmbAux = 0;                                                                // Velocidad 0 ventilador ambiente 
+  }
 
-  } else {                                                                        // Si tengo alarma
-    OutputState = 0;                                                              // Desactivo flags salidas
-    FanNevAux = 0;                                                                // Velocidad 0 ventilador nevera    
-    FanAmbAux = 0;                                                                // Velocidad 0 ventilador ambiente     
+  if (bitRead(OutputState, 5) && !DoorOpen){                                      // Si tengo activada salida ventilador nevera y puerta cerrada
+    FanNevAux = Mem.Data.RpmVentNev;                                              // Velocidad programada ventilador ambiente
+  } else {
+    FanNevAux = 0;                                                                // Velocidad 0 ventilador ambiente 
   }
+    
   digitalWrite(RES_OUT, (bitRead(OutputState, 0) || bitRead(OutputState, 1) || bitRead(OutputState, 4)) && bitRead(OutputState, 3)); // Salida resistencia
-  analogWrite(FAN_AMB_OUT, map(FanAmbAux, 0, 100, 0, 255));                       // Configura velocidad ventilador ambiente
-  if (!DoorOpen){                                                                 // Si tengo puerta cerrada
-    analogWrite(FAN_NEV_OUT, map(FanNevAux, 0, 100, 0, 255));                     // Configura velocidad ventilador nevera
-  } else {                                                                        // Si tengo interruptor puerta abierta
-    analogWrite(FAN_NEV_OUT, 0);                                                  // Para ventilador nevera con puerta abierta 
-  }
   digitalWrite(BUZZER, ((AlarmActiveFlag || DoorAlarmFlag) && Puls_05s));         // Si tengo alarmas, salida buzzer intermitente 
+  analogWrite(FAN_AMB_OUT, map(FanAmbAux, 0, 100, 0, 255));                       // Configura velocidad ventilador ambiente
+  analogWrite(FAN_NEV_OUT, map(FanNevAux, 0, 100, 0, 255));                       // Configura velocidad ventilador nevera
 }
 
 void GetCPUVolt() {                                                               // Subrutina lectura voltaje CPU
@@ -1240,12 +1241,12 @@ void GetAmps() {                                                                
   static long  result;                                                            // Variable resultado calculado acumulativo
   static long  Imax;                                                              // Variable para Imax
   static long  Imin;                                                              // Variable para Imin
-  static int   NegCount;                                                          // Variable contador lecturas negativas
-  static int   Readings;                                                          // Contador numero ciclos lecturas Ok
   static byte  i;                                                                 // Variable contador generico
-  static bool  FirstAlarmFlag;                                                    // Variable para primera alarma detectada
-  
-  if ((digitalRead(RES_OUT)) && (i < 25)) {                                       // Si termostato ON o 25 muestras no alcanzadas
+  static int   NegCount = 0;                                                      // Variable contador lecturas negativas
+  static int   Readings = 0;                                                      // Contador numero ciclos lecturas Ok
+  static bool  FirstAlarmFlag = 0;                                                // Variable para primera alarma detectada
+
+  if ((digitalRead(RES_OUT)) && (Mem.Data.Mode > 1) && (i < 25)) {                // Si termostato ON o 25 muestras no alcanzadas o modo ECO o normal
    AuxValue = ((((analogRead(AMPS_PIN) * CPUmVolt) / 1023) - (CPUmVolt / 2)) * 10) / ACDC_CONST; // Ecuación  para obtener A, mVIn, resolucion 1023, sensibilidad en V/A sensor 30A
     if (AuxValue < 0) NegCount++;                                                 // Cuenta las mediciones negativas        
     if(AuxValue>Imax) Imax=AuxValue;                                              // Compara para sacar Imax
@@ -1261,7 +1262,7 @@ void GetAmps() {                                                                
         }
         if (!AmpsAlarmACFlag) AmpsACDC[0] = (int)(((Imax-Imin)/2));               // Hago promedio y sumo offset
       } else {
-        if (!SelectedACDC) {                                                       // Si antes habia detectado AC
+        if (!SelectedACDC) {                                                      // Si antes habia detectado AC
           SelectedACDC = 1;                                                       // DC detectada
           Readings = 0;                                                           // Inicializa contador lecturas Ok 
           goto Initialize;                                                        // Inicializa lecturas 
@@ -1321,4 +1322,3 @@ void GetDS18b20() {                                                             
   ds2.begin((int)&dsConfig[2], &dsTemp[2], &dsCont[2]);                           // Inicializacion y lectura sensor 2, ambiente 
   ds3.begin((int)&dsConfig[3], &dsTemp[3], &dsCont[3]);                           // Inicializacion y lectura sensor 3, hervidor 
 }
-

@@ -15,7 +15,7 @@ Fridge_ds18b20::Fridge_ds18b20(uint8_t pin)
 //       - when not detect any device
 void Fridge_ds18b20::begin(uint8_t *dsConfig, int16_t *dsTemp, uint8_t *dsCont)
 {
-  uint32_t beginConversionTime;
+  uint32_t beginConversionTime = 0;
   uint16_t i;
   uint8_t  scratchpad[9];
   
@@ -129,7 +129,7 @@ uint8_t Fridge_ds18b20::read() {
   volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
   IO_REG_TYPE mask=bitmask;
 
-  uint8_t r;// = 0;
+  uint8_t r = 0;
 
   for (bitMask = 0x01; bitMask; bitMask <<= 1) {
     noInterrupts();							// Disable interrupts

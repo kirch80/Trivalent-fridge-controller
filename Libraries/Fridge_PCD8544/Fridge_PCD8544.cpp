@@ -92,7 +92,7 @@ void Fridge_PCD8544::begin(uint8_t contrast) {
   pinMode(_dc, OUTPUT);
   pinMode(_rst, OUTPUT);
   digitalWrite(_rst, LOW);
-  delay(100);
+  delay(500);
   digitalWrite(_rst, HIGH);
   command(0x21);					// Extended instructions
   command(0x10);					// Set bias (from 0x10 to 0x17)
